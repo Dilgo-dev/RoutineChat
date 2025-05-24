@@ -19,6 +19,7 @@
     <section id="rooms">
         <h2>Connect to a room</h2>
         <input type="text" id="roomId" placeholder="Room ID">
+        <input type="text" id="username" placeholder="Username">
         <button onclick="connectToRoom()">Connect</button>
     </section>
 
@@ -33,9 +34,12 @@
 
         function connectToRoom() {
             const roomId = document.getElementById("roomId").value;
-            if (!roomId) return console.error("Room ID is required");
+            const username = document.getElementById("username").value;
 
-            ws = new WebSocket("ws://localhost:3333/ws?roomId=" + roomId);
+            if (!roomId) return console.error("Room ID is required");
+            if (!username) return console.error("Username is required");
+
+            ws = new WebSocket("ws://localhost:3333/ws?roomId=" + roomId + "&username=" + username);
             console.info(`Connected to the chat room: ${roomId} 🐡`);
 
             document.getElementById("status-text").textContent = "Connected";

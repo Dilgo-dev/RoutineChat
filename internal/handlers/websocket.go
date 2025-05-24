@@ -8,18 +8,35 @@ import (
 	"golang.org/x/net/websocket"
 )
 
+type User struct {
+	Username string
+	RoomId   string
+	Conn     *websocket.Conn
+}
+
 type server struct {
-	rooms map[string]map[*websocket.Conn]bool
+	rooms map[string]map[*User]bool
 }
 
 func NewServer() *server {
 	return &server{
-		rooms: make(map[string]map[*websocket.Conn]bool),
+		rooms: make(map[string]map[*User]bool),
 	}
 }
 
 func (s *server) HandleWS(ws *websocket.Conn) {
 	roomId := ws.Request().URL.Query().Get("roomId")
+	user := &User{
+		Username: ws.Request().URL.Query().Get("username"),
+		RoomId:   roomId,
+		Conn:     ws,
+	}
+
+	if user.Username == "" {
+		fmt.Println("No username provided")
+		ws.Close()
+		return
+	}
 
 	if roomId == "" {
 		fmt.Println("No roomId provided")
@@ -27,7 +44,7 @@ func (s *server) HandleWS(ws *websocket.Conn) {
 		return
 	}
 
-	s.joinRoom(ws, roomId)
+	s.joinRoom(user, roomId)
 
 	fmt.Printf("New client connected to room %s from client %s 🐡\n", roomId, ws.RemoteAddr())
 
@@ -36,7 +53,7 @@ func (s *server) HandleWS(ws *websocket.Conn) {
 		if _, err := ws.Read(msg); err != nil {
 			if err == io.EOF {
 				fmt.Println("Client disconnected")
-				s.leaveRoom(ws, roomId)
+				s.leaveRoom(user, roomId)
 				ws.Close()
 				break
 			}
@@ -51,24 +68,24 @@ func (s *server) HandleWS(ws *websocket.Conn) {
 
 func (s *server) broadcastToRoom(roomId string, msg string) {
 	for client := range s.rooms[roomId] {
-		if _, err := client.Write([]byte(msg)); err != nil {
+		if _, err := client.Conn.Write([]byte(msg)); err != nil {
 			fmt.Println("Error broadcasting message", err)
 			continue
 		}
 	}
 }
 
-func (s *server) joinRoom(ws *websocket.Conn, roomId string) {
+func (s *server) joinRoom(user *User, roomId string) {
 	if _, ok := s.rooms[roomId]; !ok {
-		s.rooms[roomId] = make(map[*websocket.Conn]bool)
+		s.rooms[roomId] = make(map[*User]bool)
 	}
-	s.rooms[roomId][ws] = true
+	s.rooms[roomId][user] = true
 	s.sendRoomNumber(roomId)
 }
 
-func (s *server) leaveRoom(ws *websocket.Conn, roomId string) {
-	delete(s.rooms[roomId], ws)
-	fmt.Printf("Client %s left room %s 🐡\n", ws.RemoteAddr(), roomId)
+func (s *server) leaveRoom(user *User, roomId string) {
+	delete(s.rooms[roomId], user)
+	fmt.Printf("Client %s left room %s 🐡\n", user.Conn.RemoteAddr(), roomId)
 	s.sendRoomNumber(roomId)
 	if len(s.rooms[roomId]) == 0 {
 		delete(s.rooms, roomId)
