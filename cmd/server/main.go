@@ -1,12 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 
+	"github.com/Dilgo-dev/RoutineChat/internal/handlers"
 	"github.com/joho/godotenv"
-	"github.com/labstack/echo/v4"
+	"golang.org/x/net/websocket"
 )
 
 func main() {
@@ -16,11 +18,13 @@ func main() {
 
 	port := os.Getenv("PORT")
 
-	e := echo.New()
-
-	e.GET("/", func(c echo.Context) error {
-		return c.String(http.StatusOK, "Hello, Routine Chat ! 🎣")
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "internal/template/index.html")
 	})
 
-	e.Logger.Fatal(e.Start(":" + port))
+	http.Handle("/ws", websocket.Handler(handlers.NewServer().HandleWS))
+
+	fmt.Println("Server is running on port http://localhost:" + port)
+
+	http.ListenAndServe(":"+port, nil)
 }
