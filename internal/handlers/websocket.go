@@ -27,6 +27,8 @@ func (s *server) HandleWS(ws *websocket.Conn) {
 		if _, err := ws.Read(msg); err != nil {
 			if err == io.EOF {
 				fmt.Println("Client disconnected")
+				delete(s.clients, ws)
+				ws.Close()
 				break
 			}
 			fmt.Println("Error reading message", err)
