@@ -6,34 +6,24 @@ import (
 	"io"
 	"sync"
 
+	"github.com/Dilgo-dev/RoutineChat/internal/models"
 	"golang.org/x/net/websocket"
 )
 
-type User struct {
-	Username string
-	RoomId   string
-	Conn     *websocket.Conn
-}
-
 type server struct {
-	rooms map[string]map[*User]bool
+	rooms map[string]map[*models.User]bool
 	mu    sync.RWMutex
 }
 
 func NewServer() *server {
 	return &server{
-		rooms: make(map[string]map[*User]bool),
+		rooms: make(map[string]map[*models.User]bool),
 	}
-}
-
-type sendMessage struct {
-	Message  string `json:"message"`
-	Username string `json:"username"`
 }
 
 func (s *server) HandleWS(ws *websocket.Conn) {
 	roomId := ws.Request().URL.Query().Get("roomId")
-	user := &User{
+	user := &models.User{
 		Username: ws.Request().URL.Query().Get("username"),
 		RoomId:   roomId,
 		Conn:     ws,
@@ -68,12 +58,12 @@ func (s *server) HandleWS(ws *websocket.Conn) {
 			continue
 		}
 
-		sendMessage := sendMessage{
-			Message:  string(msg),
+		message := models.Message{
+			Message:  msg,
 			Username: user.Username,
 		}
 
-		sendMessageJson, err := json.Marshal(sendMessage)
+		sendMessageJson, err := json.Marshal(message)
 		if err != nil {
 			fmt.Println("Error marshaling send message", err)
 			continue
@@ -93,18 +83,18 @@ func (s *server) broadcastToRoom(roomId string, msg string) {
 	}
 }
 
-func (s *server) joinRoom(user *User, roomId string) {
+func (s *server) joinRoom(user *models.User, roomId string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if _, ok := s.rooms[roomId]; !ok {
-		s.rooms[roomId] = make(map[*User]bool)
+		s.rooms[roomId] = make(map[*models.User]bool)
 	}
 	s.rooms[roomId][user] = true
 	s.sendRoomNumber(roomId)
 }
 
-func (s *server) leaveRoom(user *User, roomId string) {
+func (s *server) leaveRoom(user *models.User, roomId string) {
 	delete(s.rooms[roomId], user)
 	fmt.Printf("Client %s left room %s 🐡\n", user.Conn.RemoteAddr(), roomId)
 	s.sendRoomNumber(roomId)
