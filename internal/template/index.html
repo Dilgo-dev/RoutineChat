@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎣 Routine Chat</title>
+</head>
+<body>
+    <h1>🎣 Routine Chat</h1>
+    <input type="text" id="message" placeholder="Message">
+    <button onclick="sendMessage()">Send</button>
+
+    <script>
+        const ws = new WebSocket("ws://localhost:3333/ws");
+
+        console.info("Connected to the chat 🐡");
+
+        ws.onmessage = function(event) {
+            console.log(event.data);
+        }
+
+        function sendMessage() {
+            ws.send(document.getElementById("message").value);
+        }
+    </script>
+</body>
+</html>
