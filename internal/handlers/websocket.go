@@ -35,7 +35,7 @@ func (s *server) HandleWS(ws *websocket.Conn) {
 			continue
 		}
 
-		s.broadcast(string(msg))
+		go s.broadcast(string(msg))
 	}
 
 }
