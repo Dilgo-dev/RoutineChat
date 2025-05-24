@@ -7,18 +7,37 @@
 </head>
 <body>
     <h1>🎣 Routine Chat</h1>
-    <input type="text" id="message" placeholder="Message">
-    <div id="messages"></div>
-    <button onclick="sendMessage()">Send</button>
 
+    <section id="rooms">
+        <h2>Connect to a room</h2>
+        <input type="text" id="roomId" placeholder="Room ID">
+        <button onclick="connectToRoom()">Connect</button>
+    </section>
+
+    <section id="chat" style="display: none;">
+        <input type="text" id="message" placeholder="Message">
+        <div id="messages"></div>
+        <button onclick="sendMessage()">Send</button>
+    </section>
+    
     <script>
-        const ws = new WebSocket("ws://localhost:3333/ws");
+        let ws;
 
-        console.info("Connected to the chat 🐡");
+        function connectToRoom() {
+            const roomId = document.getElementById("roomId").value;
+            if (!roomId) return console.error("Room ID is required");
 
-        ws.onmessage = function(event) {
-            addMessage(event.data);
+            ws = new WebSocket("ws://localhost:3333/ws?roomId=" + roomId);
+            console.info(`Connected to the chat room: ${roomId} 🐡`);
+
+            document.getElementById("rooms").style.display = "none";
+            document.getElementById("chat").style.display = "block";
+
+            ws.onmessage = function(event) {
+                addMessage(event.data);
+            }
         }
+
 
         function sendMessage() {
             ws.send(document.getElementById("message").value);
