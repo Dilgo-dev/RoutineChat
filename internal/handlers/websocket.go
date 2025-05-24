@@ -66,7 +66,9 @@ func (s *server) joinRoom(ws *websocket.Conn, roomId string) {
 
 func (s *server) leaveRoom(ws *websocket.Conn, roomId string) {
 	delete(s.rooms[roomId], ws)
+	fmt.Printf("Client %s left room %s 🐡\n", ws.RemoteAddr(), roomId)
 	if len(s.rooms[roomId]) == 0 {
 		delete(s.rooms, roomId)
+		fmt.Printf("Room %s is empty, removing it 🐡\n", roomId)
 	}
 }
