@@ -57,7 +57,7 @@
                     if (data.number !== undefined && data.roomId !== undefined) {
                         document.getElementById("status-number").textContent = data.number;
                     } else {
-                        addMessage(event.data);
+                        addMessage(data.username + ": " + data.message);
                     }
                 } catch (e) {
                     addMessage(event.data);

@@ -24,6 +24,11 @@ func NewServer() *server {
 	}
 }
 
+type sendMessage struct {
+	Message  string `json:"message"`
+	Username string `json:"username"`
+}
+
 func (s *server) HandleWS(ws *websocket.Conn) {
 	roomId := ws.Request().URL.Query().Get("roomId")
 	user := &User{
@@ -61,7 +66,18 @@ func (s *server) HandleWS(ws *websocket.Conn) {
 			continue
 		}
 
-		go s.broadcastToRoom(roomId, string(msg))
+		sendMessage := sendMessage{
+			Message:  string(msg),
+			Username: user.Username,
+		}
+
+		sendMessageJson, err := json.Marshal(sendMessage)
+		if err != nil {
+			fmt.Println("Error marshaling send message", err)
+			continue
+		}
+
+		go s.broadcastToRoom(roomId, string(sendMessageJson))
 	}
 
 }
