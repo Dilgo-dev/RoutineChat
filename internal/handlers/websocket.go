@@ -56,8 +56,8 @@ func (s *server) HandleWS(ws *websocket.Conn) {
 	fmt.Printf("New client connected to room %s from client %s 🐡\n", roomId, ws.RemoteAddr())
 
 	for {
-		msg := make([]byte, 512)
-		if _, err := ws.Read(msg); err != nil {
+		var msg string
+		if err := websocket.Message.Receive(ws, &msg); err != nil {
 			if err == io.EOF {
 				fmt.Println("Client disconnected")
 				s.leaveRoom(user, roomId)
