@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"sync"
 
 	"golang.org/x/net/websocket"
 )
@@ -16,6 +17,7 @@ type User struct {
 
 type server struct {
 	rooms map[string]map[*User]bool
+	mu    sync.RWMutex
 }
 
 func NewServer() *server {
@@ -92,6 +94,9 @@ func (s *server) broadcastToRoom(roomId string, msg string) {
 }
 
 func (s *server) joinRoom(user *User, roomId string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	if _, ok := s.rooms[roomId]; !ok {
 		s.rooms[roomId] = make(map[*User]bool)
 	}
