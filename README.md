@@ -1,3 +1,3 @@
 # 🎣 Routine Chat
 
-Simple chat using go routine
+Simple chat using websocket and go routine
