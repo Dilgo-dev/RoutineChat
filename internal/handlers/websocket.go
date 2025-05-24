@@ -35,8 +35,16 @@ func (s *server) HandleWS(ws *websocket.Conn) {
 			continue
 		}
 
-		fmt.Println("Message received:", string(msg))
-		ws.Write([]byte("Message received from server 🎣"))
+		s.broadcast(string(msg))
 	}
 
+}
+
+func (s *server) broadcast(msg string) {
+	for client := range s.clients {
+		if _, err := client.Write([]byte(msg)); err != nil {
+			fmt.Println("Error broadcasting message", err)
+			continue
+		}
+	}
 }

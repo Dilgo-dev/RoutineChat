@@ -8,6 +8,7 @@
 <body>
     <h1>🎣 Routine Chat</h1>
     <input type="text" id="message" placeholder="Message">
+    <div id="messages"></div>
     <button onclick="sendMessage()">Send</button>
 
     <script>
@@ -16,11 +17,18 @@
         console.info("Connected to the chat 🐡");
 
         ws.onmessage = function(event) {
-            console.log(event.data);
+            addMessage(event.data);
         }
 
         function sendMessage() {
             ws.send(document.getElementById("message").value);
+        }
+        
+        function addMessage(message) {
+            const messages = document.getElementById("messages");
+            const messageElement = document.createElement("div");
+            messageElement.textContent = message;
+            messages.appendChild(messageElement);
         }
     </script>
 </body>
