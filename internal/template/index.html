@@ -14,6 +14,11 @@
         <button onclick="connectToRoom()">Connect</button>
     </section>
 
+    <p id="status">
+        <span id="status-text">Disconnected</span>
+        <span id="status-room">No room selected</span>
+    </p>
+
     <section id="chat" style="display: none;">
         <input type="text" id="message" placeholder="Message">
         <div id="messages"></div>
@@ -30,16 +35,30 @@
             ws = new WebSocket("ws://localhost:3333/ws?roomId=" + roomId);
             console.info(`Connected to the chat room: ${roomId} 🐡`);
 
+            document.getElementById("status-text").textContent = "Connected";
+            document.getElementById("status-room").textContent = roomId;
+
             document.getElementById("rooms").style.display = "none";
             document.getElementById("chat").style.display = "block";
 
             ws.onmessage = function(event) {
                 addMessage(event.data);
             }
+
+            ws.onclose = function() {
+                console.info("Disconnected from the chat room 🐡");
+
+                document.getElementById("status-text").textContent = "Disconnected";
+                document.getElementById("status-room").textContent = "No room selected";
+
+                document.getElementById("rooms").style.display = "block";
+                document.getElementById("chat").style.display = "none";
+            }
         }
 
 
         function sendMessage() {
+            if (!ws) return console.error("Not connected to a chat room");
             ws.send(document.getElementById("message").value);
         }
         
