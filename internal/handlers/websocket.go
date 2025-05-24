@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 
@@ -62,19 +63,33 @@ func (s *server) joinRoom(ws *websocket.Conn, roomId string) {
 		s.rooms[roomId] = make(map[*websocket.Conn]bool)
 	}
 	s.rooms[roomId][ws] = true
-	s.sendRoomNumber(ws, roomId)
+	s.sendRoomNumber(roomId)
 }
 
 func (s *server) leaveRoom(ws *websocket.Conn, roomId string) {
 	delete(s.rooms[roomId], ws)
 	fmt.Printf("Client %s left room %s 🐡\n", ws.RemoteAddr(), roomId)
+	s.sendRoomNumber(roomId)
 	if len(s.rooms[roomId]) == 0 {
 		delete(s.rooms, roomId)
 		fmt.Printf("Room %s is empty, removing it 🐡\n", roomId)
 	}
 }
 
-func (s *server) sendRoomNumber(ws *websocket.Conn, roomId string) {
-	ws.Write([]byte(fmt.Sprintf("Room %s has %d clients 🐡", roomId, len(s.rooms[roomId])-1)))
-	s.broadcastToRoom(roomId, fmt.Sprintf("New client joined the room %s 🐡", roomId))
+type roomInfo struct {
+	Number int    `json:"number"`
+	RoomId string `json:"roomId"`
+}
+
+func (s *server) sendRoomNumber(roomId string) {
+	info := roomInfo{
+		Number: len(s.rooms[roomId]) - 1,
+		RoomId: roomId,
+	}
+	jsonData, err := json.Marshal(info)
+	if err != nil {
+		fmt.Println("Error marshaling room info:", err)
+		return
+	}
+	s.broadcastToRoom(roomId, string(jsonData))
 }
