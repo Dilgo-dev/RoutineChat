@@ -13,5 +13,5 @@ func main() {
 		return c.String(http.StatusOK, "Hello, Routine Chat ! 🎣")
 	})
 
-	e.Start(":3333")
+	e.Logger.Fatal(e.Start(":3333"))
 }
