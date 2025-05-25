@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"log/slog"
 	"regexp"
 	"sync"
+	"time"
 
 	"github.com/Dilgo-dev/RoutineChat/internal/models"
 	"golang.org/x/net/websocket"
@@ -40,13 +42,28 @@ func (s *server) HandleWS(ws *websocket.Conn) {
 
 	s.joinRoom(user, roomId)
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	slog.Info("New client connected to room", "roomId", roomId, "client", ws.RemoteAddr())
 
+	go s.heartbeat(ctx, ws)
+
 	for {
+		select {
+		case <-ctx.Done():
+			s.leaveRoom(user, roomId)
+			ws.Close()
+			return
+		default:
+		}
+
 		var msg string
+		ws.SetReadDeadline(time.Now().Add(60 * time.Second))
 		if err := websocket.Message.Receive(ws, &msg); err != nil {
 			if err == io.EOF {
 				fmt.Println("Client disconnected")
+				cancel()
 				s.leaveRoom(user, roomId)
 				ws.Close()
 				break
@@ -69,6 +86,32 @@ func (s *server) HandleWS(ws *websocket.Conn) {
 		go s.broadcastToRoom(roomId, string(sendMessageJson))
 	}
 
+}
+
+func (s *server) heartbeat(ctx context.Context, ws *websocket.Conn) {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			slog.Debug("Heartbeat stopped for client")
+			return
+		case <-ticker.C:
+			heartbeat := map[string]string{"type": "heartbeat"}
+			heartbeatJson, err := json.Marshal(heartbeat)
+			if err != nil {
+				slog.Error("Error marshaling heartbeat", "error", err)
+				return
+			}
+
+			ws.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			if _, err := ws.Write(heartbeatJson); err != nil {
+				slog.Error("Error sending heartbeat", "error", err)
+				return
+			}
+		}
+	}
 }
 
 func validateInput(username string, roomId string) error {
