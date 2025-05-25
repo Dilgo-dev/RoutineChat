@@ -2,8 +2,11 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"log/slog"
+	"regexp"
 	"sync"
 
 	"github.com/Dilgo-dev/RoutineChat/internal/models"
@@ -29,21 +32,15 @@ func (s *server) HandleWS(ws *websocket.Conn) {
 		Conn:     ws,
 	}
 
-	if user.Username == "" {
-		fmt.Println("No username provided")
-		ws.Close()
-		return
-	}
-
-	if roomId == "" {
-		fmt.Println("No roomId provided")
+	if err := validateInput(user.Username, roomId); err != nil {
+		slog.Error("Invalid input", "error", err)
 		ws.Close()
 		return
 	}
 
 	s.joinRoom(user, roomId)
 
-	fmt.Printf("New client connected to room %s from client %s 🐡\n", roomId, ws.RemoteAddr())
+	slog.Info("New client connected to room", "roomId", roomId, "client", ws.RemoteAddr())
 
 	for {
 		var msg string
@@ -72,6 +69,19 @@ func (s *server) HandleWS(ws *websocket.Conn) {
 		go s.broadcastToRoom(roomId, string(sendMessageJson))
 	}
 
+}
+
+func validateInput(username string, roomId string) error {
+	if username == "" {
+		return errors.New("username is required")
+	}
+	if roomId == "" {
+		return errors.New("roomId is required")
+	}
+	if !regexp.MustCompile(`^[a-zA-Z0-9_-]+$`).MatchString(roomId) {
+		return errors.New("invalid roomId format")
+	}
+	return nil
 }
 
 func (s *server) broadcastToRoom(roomId string, msg string) {
