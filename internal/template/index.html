@@ -54,6 +54,11 @@
             ws.onmessage = function(event) {
                 try {
                     const data = JSON.parse(event.data);
+
+                    if (data.type === "heartbeat") {
+                        return;
+                    }
+
                     if (data.number !== undefined && data.roomId !== undefined) {
                         document.getElementById("status-number").textContent = data.number;
                     } else {
